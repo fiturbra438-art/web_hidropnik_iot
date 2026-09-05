@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Template web hidroponik" />
+    <title>Web Hidroponik</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">HIDRO<span>PONIK</span></a>
+      <nav class="nav-links" aria-label="Navigasi utama">
+        <a href="#tentang">Tentang</a>
+        <a href="#fitur">Fitur</a>
+        <a href="#kontak">Kontak</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">TEMPLATE SIAP DIKEMBANGKAN</p>
+          <h1>Rancang pengalaman hidroponikmu.</h1>
+          <p class="hero-copy">Area ini adalah tempat untuk memasukkan desain utama, pesan brand, atau dashboard aplikasimu.</p>
+          <a class="button" href="#kontak">Mulai dari sini <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="hero-visual" aria-label="Area gambar utama" role="img">
+          <span>Masukkan visual desainmu di sini</span>
+        </div>
+      </section>
+
+      <section class="content-section" id="tentang">
+        <p class="eyebrow">RUANG DESAIN</p>
+        <h2>Struktur dasar yang mudah kamu ubah.</h2>
+        <div class="feature-grid" id="fitur">
+          <article class="feature-card"><span class="number">01</span><h3>Frontend</h3><p>Edit <code>public/index.html</code>, <code>styles.css</code>, dan <code>app.js</code> untuk memasukkan desainmu.</p></article>
+          <article class="feature-card"><span class="number">02</span><h3>Backend API</h3><p>Tambahkan endpoint baru di <code>server.js</code> untuk kebutuhan data dan integrasi.</p></article>
+          <article class="feature-card"><span class="number">03</span><h3>Siap diperluas</h3><p>Hubungkan database, autentikasi, upload gambar, atau layanan eksternal sesuai kebutuhan.</p></article>
+        </div>
+      </section>
+
+      <section class="contact-section" id="kontak">
+        <div>
+          <p class="eyebrow">CONTOH INTEGRASI API</p>
+          <h2>Formulir sudah terhubung ke backend.</h2>
+        </div>
+        <form id="contact-form">
+          <label>Nama<input name="name" required /></label>
+          <label>Email<input type="email" name="email" required /></label>
+          <label>Pesan<textarea name="message" rows="4" required></textarea></label>
+          <button class="button" type="submit">Kirim pesan <span aria-hidden="true">→</span></button>
+          <p class="form-status" id="form-status" role="status"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer"><span>© 2026 Web Hidroponik</span><span>Built for your next idea.</span></footer>
+    <script src="/app.js"></script>
+  </body>
+</html>
