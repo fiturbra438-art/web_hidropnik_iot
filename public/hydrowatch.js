@@ -1,0 +1,273 @@
+// ── State ──────────────────────────────────────────────────────────────────
+const sensor = { ph: 6.4, nutrisi: 1240, kekeruhan: 18, suhu: 23.5, volume: 87 };
+
+const history = {
+  ph:     [6.2,6.3,6.5,6.4,6.6,6.3,6.4,6.5,6.4,6.3,6.5,6.4],
+  nutrisi:[1180,1200,1220,1240,1260,1230,1250,1240,1220,1210,1230,1240],
+  suhu:   [23.1,23.3,23.5,23.4,23.6,23.5,23.4,23.5,23.6,23.4,23.5,23.5],
+};
+
+let logEntries = [];
+let logId = 0;
+let isDark = true;
+
+// ── Status helpers ─────────────────────────────────────────────────────────
+function phStatus(v)      { return v<5.5||v>7.5 ? {l:"KRITIS",c:"danger"} : v<6.0||v>7.0 ? {l:"PERINGATAN",c:"warn"} : {l:"NORMAL",c:"ok"}; }
+function nutrisiStatus(v) { return v<800||v>1800 ? {l:"KRITIS",c:"danger"} : v<1000||v>1600 ? {l:"PERINGATAN",c:"warn"} : {l:"OPTIMAL",c:"ok"}; }
+function keruhStatus(v)   { return v>40 ? {l:"KERUH",c:"danger"} : v>25 ? {l:"SEDANG",c:"warn"} : {l:"JERNIH",c:"ok"}; }
+function suhuStatus(v)    { return v<18||v>30 ? {l:"KRITIS",c:"danger"} : v<20||v>28 ? {l:"PERINGATAN",c:"warn"} : {l:"IDEAL",c:"ok"}; }
+
+const COLOR = { ok:"#22c55e", warn:"#f59e0b", danger:"#ef4444" };
+function clr(c) { return COLOR[c]; }
+
+// ── Format time ────────────────────────────────────────────────────────────
+function fmt(d) {
+  return d.toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+}
+
+// ── Gauge SVG ──────────────────────────────────────────────────────────────
+function drawGauge(svgId, value, min, max, unit, statusClass) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const pct  = Math.min(1, Math.max(0, (value - min) / (max - min)));
+  const angle= -135 + pct * 270;
+  const r=52, cx=70, cy=70;
+  const color = clr(statusClass);
+
+  function toRad(d) { return ((d - 90) * Math.PI) / 180; }
+  function arcPath(s, e, rv) {
+    const x1=cx+rv*Math.cos(toRad(s)), y1=cy+rv*Math.sin(toRad(s));
+    const x2=cx+rv*Math.cos(toRad(e)), y2=cy+rv*Math.sin(toRad(e));
+    const large = e-s>180?1:0;
+    return `M ${x1} ${y1} A ${rv} ${rv} 0 ${large} 1 ${x2} ${y2}`;
+  }
+
+  const trackColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
+  const textColor  = isDark ? "rgba(255,255,255,0.3)"  : "rgba(10,30,18,0.35)";
+
+  const displayVal = unit==="ppm"||unit==="L"
+    ? Math.round(value)
+    : value.toFixed(1);
+
+  svg.innerHTML = `
+    <path d="${arcPath(-135,135,r)}" fill="none" stroke="${trackColor}" stroke-width="8" stroke-linecap="round"/>
+    <path d="${arcPath(-135,-135+pct*270,r)}" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round"
+      style="filter:drop-shadow(0 0 5px ${color}77)"/>
+    <circle cx="${cx+r*Math.cos(toRad(angle))}" cy="${cy+r*Math.sin(toRad(angle))}" r="4"
+      fill="${color}" style="filter:drop-shadow(0 0 4px ${color})"/>
+    <text x="${cx}" y="${cy+4}" text-anchor="middle" font-family="JetBrains Mono,monospace"
+      font-size="15" font-weight="700" fill="${color}">${displayVal}</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-family="Outfit,sans-serif"
+      font-size="8" fill="${textColor}">${unit}</text>
+    <text x="12" y="96" font-family="JetBrains Mono,monospace" font-size="7" fill="${textColor}">${min}</text>
+    <text x="128" y="96" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="7" fill="${textColor}">${max}</text>
+  `;
+}
+
+// ── Sparkline SVG ──────────────────────────────────────────────────────────
+function drawSparkline(svgId, data, statusClass) {
+  const svg = document.getElementById(svgId);
+  if (!svg || data.length < 2) return;
+  const color = clr(statusClass);
+  const mn=Math.min(...data), mx=Math.max(...data), range=mx-mn||1;
+  const w=120, h=28;
+  const pts = data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/range)*h}`).join(" ");
+  const last = data[data.length-1];
+  const lx=(data.length-1)/(data.length-1)*w;
+  const ly=h-((last-mn)/range)*h;
+  svg.innerHTML = `
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+    <circle cx="${lx}" cy="${ly}" r="2.5" fill="${color}"/>
+  `;
+}
+
+// ── Badge ─────────────────────────────────────────────────────────────────
+function setBadge(id, status) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = status.l;
+  el.className = "badge " + status.c;
+}
+
+// ── Update DOM ─────────────────────────────────────────────────────────────
+function updateDOM() {
+  const ps  = phStatus(sensor.ph);
+  const ns  = nutrisiStatus(sensor.nutrisi);
+  const ks  = keruhStatus(sensor.kekeruhan);
+  const ss  = suhuStatus(sensor.suhu);
+
+  // Badges
+  setBadge("badge-ph", ps);
+  setBadge("badge-nutrisi", ns);
+  setBadge("badge-keruh", ks);
+  setBadge("badge-suhu", ss);
+
+  // Gauges
+  drawGauge("gauge-ph",      sensor.ph,        4,    9,    "pH",  ps.c);
+  drawGauge("gauge-nutrisi", sensor.nutrisi,   0,    2000, "ppm", ns.c);
+  drawGauge("gauge-keruh",   sensor.kekeruhan, 0,    100,  "NTU", ks.c);
+
+  // Sparklines
+  drawSparkline("spark-ph",      history.ph,      ps.c);
+  drawSparkline("spark-nutrisi", history.nutrisi, ns.c);
+  drawSparkline("spark-suhu",    history.suhu,    ss.c);
+
+  // pH values
+  const phNow = document.getElementById("val-ph-now");
+  if (phNow) { phNow.textContent = sensor.ph.toFixed(2); phNow.style.color = clr(ps.c); }
+
+  // Nutrisi values
+  const nNow = document.getElementById("val-nutrisi-now");
+  if (nNow) { nNow.textContent = sensor.nutrisi; nNow.style.color = clr(ns.c); }
+
+  // Kekeruhan label
+  const kntu = document.getElementById("val-keruh-ntu");
+  if (kntu) kntu.textContent = sensor.kekeruhan.toFixed(1) + " NTU";
+
+  // Suhu
+  const svEl = document.getElementById("val-suhu");
+  if (svEl) { svEl.textContent = sensor.suhu.toFixed(1); svEl.style.color = clr(ss.c); }
+  const sMin = document.getElementById("val-suhu-min");
+  const sMax = document.getElementById("val-suhu-max");
+  if (sMin) sMin.textContent = Math.min(...history.suhu).toFixed(1) + "°";
+  if (sMax) sMax.textContent = Math.max(...history.suhu).toFixed(1) + "°";
+
+  // Volume
+  const vol   = sensor.volume;
+  const volEl = document.getElementById("val-volume");
+  const volUs = document.getElementById("val-volume-used");
+  const tankF = document.getElementById("tank-fill");
+  const tankL = document.getElementById("tank-line");
+  const barV  = document.getElementById("bar-volume");
+  const volAl = document.getElementById("volume-alert");
+  if (volEl) volEl.textContent = vol.toFixed(1) + " L";
+  if (volUs) volUs.textContent = vol.toFixed(1) + " L";
+  if (tankF) tankF.style.height = vol + "%";
+  if (tankL) tankL.style.bottom = vol + "%";
+  if (barV)  barV.style.width   = vol + "%";
+  if (volAl) volAl.style.display = vol < 30 ? "flex" : "none";
+
+  // Control live values
+  const cpv = document.getElementById("ctrl-ph-val");
+  const cnv = document.getElementById("ctrl-nutrisi-val");
+  if (cpv) { cpv.textContent = "pH " + sensor.ph.toFixed(2); cpv.style.color = clr(ps.c); }
+  if (cnv) { cnv.textContent = sensor.nutrisi + " ppm"; cnv.style.color = clr(ns.c); }
+
+  // Clock
+  const clock = document.getElementById("clock");
+  if (clock) clock.textContent = fmt(new Date());
+}
+
+// ── Check inputs ───────────────────────────────────────────────────────────
+function checkInputs() {
+  const phVal  = parseFloat(document.getElementById("input-ph")?.value);
+  const nutVal = parseFloat(document.getElementById("input-nutrisi")?.value);
+
+  const btnPh  = document.getElementById("btn-ph");
+  const btnNut = document.getElementById("btn-nutrisi");
+  const hintPh = document.getElementById("hint-ph");
+  const hintNut= document.getElementById("hint-nutrisi");
+
+  const phOk  = !isNaN(phVal)  && phVal  > 0;
+  const nutOk = !isNaN(nutVal) && nutVal > 0;
+
+  if (btnPh)  { btnPh.disabled  = !phOk;  btnPh.className  = "ctrl-btn"  + (phOk  ? " active" : ""); }
+  if (btnNut) { btnNut.disabled = !nutOk; btnNut.className = "ctrl-btn warn-btn" + (nutOk ? " active" : ""); }
+  if (hintPh)  hintPh.style.display  = phOk  ? "none" : "block";
+  if (hintNut) hintNut.style.display = nutOk ? "none" : "block";
+}
+
+// ── Add actions ────────────────────────────────────────────────────────────
+function addPh() {
+  const ml = parseFloat(document.getElementById("input-ph")?.value);
+  if (!ml || ml <= 0) return;
+  sensor.ph = +(sensor.ph + ml * 0.02).toFixed(2);
+  pushLog("ph", ml);
+  document.getElementById("input-ph").value = "";
+  checkInputs();
+  updateDOM();
+}
+
+function addNutrisi() {
+  const ml = parseFloat(document.getElementById("input-nutrisi")?.value);
+  if (!ml || ml <= 0) return;
+  sensor.nutrisi = Math.round(sensor.nutrisi + ml * 1.5);
+  pushLog("nutrisi", ml);
+  document.getElementById("input-nutrisi").value = "";
+  checkInputs();
+  updateDOM();
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────
+function pushLog(type, amount) {
+  logEntries.unshift({ id: logId++, time: new Date(), type, amount });
+  if (logEntries.length > 20) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const empty  = document.getElementById("log-empty");
+  const list   = document.getElementById("log-list");
+  const count  = document.getElementById("log-count");
+  if (!list) return;
+
+  if (count) count.textContent = logEntries.length + " entri";
+
+  if (logEntries.length === 0) {
+    if (empty) empty.style.display = "block";
+    list.innerHTML = "";
+    return;
+  }
+  if (empty) empty.style.display = "none";
+
+  list.innerHTML = logEntries.map(e => {
+    const isPh = e.type === "ph";
+    const label  = isPh ? "cairan pH" : "nutrisi";
+    const valClr = isPh ? "#22c55e"   : "#f59e0b";
+    const iconCls= isPh ? "ph-icon"   : "nut-icon";
+    const dotCls = isPh ? "ph-dot"    : "nut-dot";
+    return `
+      <div class="log-item">
+        <div class="log-icon ${iconCls}">
+          <div class="log-dot ${dotCls}"></div>
+        </div>
+        <span class="log-text">
+          Tambah ${label}
+          <span class="mono" style="color:${valClr};font-weight:600"> ${e.amount} mL</span>
+        </span>
+        <span class="log-time mono">${fmt(e.time)}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Theme toggle ───────────────────────────────────────────────────────────
+function toggleTheme() {
+  isDark = !isDark;
+  document.body.className = isDark ? "dark" : "light";
+  updateDOM(); // redraw gauges with new colors
+}
+
+// ── Live simulation ────────────────────────────────────────────────────────
+function tick() {
+  sensor.ph        = +(sensor.ph        + (Math.random()-0.5)*0.06).toFixed(2);
+  sensor.nutrisi   = Math.round(sensor.nutrisi + (Math.random()-0.5)*10);
+  sensor.kekeruhan = +(sensor.kekeruhan + (Math.random()-0.5)*0.9 ).toFixed(1);
+  sensor.suhu      = +(sensor.suhu      + (Math.random()-0.5)*0.12).toFixed(1);
+  sensor.volume    = +(sensor.volume    - Math.random()*0.04       ).toFixed(1);
+
+  history.ph.push(sensor.ph);       if (history.ph.length>12)      history.ph.shift();
+  history.nutrisi.push(sensor.nutrisi); if (history.nutrisi.length>12) history.nutrisi.shift();
+  history.suhu.push(sensor.suhu);   if (history.suhu.length>12)    history.suhu.shift();
+
+  updateDOM();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  checkInputs();
+  updateDOM();
+  renderLog();
+  setInterval(tick, 3000);
+});
