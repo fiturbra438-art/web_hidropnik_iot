@@ -61,7 +61,7 @@ function drawSparkline(svgId, data, statusClass) {
   if (!svg || data.length < 2) return;
   const color = clr(statusClass);
   const mn=Math.min(...data), mx=Math.max(...data), range=mx-mn||1;
-  const w=240, h=40;
+  const w=300, h=40;
   const pts = data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/range)*h}`).join(" ");
   const areaPts = `0,${h} ${pts} ${w},${h}`;
   const last = data[data.length-1];
