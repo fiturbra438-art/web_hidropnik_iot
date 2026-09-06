@@ -23,7 +23,24 @@ npm run dev
 - `public/app.js`: interaksi frontend dan pemanggilan API.
 - `server.js`: server static dan endpoint backend.
 - `GET /api/health`: pengecekan status API.
+- `GET /api/sensor/latest`: mengambil pembacaan sensor terbaru dari sumber data.
 - `POST /api/contact`: contoh endpoint formulir.
+
+## Sumber data sensor
+
+Backend memakai `SENSOR_DATA_URL` untuk mengambil data sensor. Jika tidak diatur,
+backend memakai Firebase Realtime Database yang sudah dikonfigurasi:
+
+```text
+https://hidroponik-iot-54mb4-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json
+```
+
+Untuk memakai URL hosting lain di PowerShell:
+
+```powershell
+$env:SENSOR_DATA_URL = "https://alamat-hosting-anda/data"
+npm start
+```
 
 ## Mengembangkan backend
 

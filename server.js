@@ -5,6 +5,8 @@ const { URL } = require('node:url');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const SENSOR_DATA_URL = process.env.SENSOR_DATA_URL
+  || 'https://hidroponik-iot-54mb4-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json';
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -35,6 +37,35 @@ function readBody(request) {
     request.on('end', () => resolve(body));
     request.on('error', reject);
   });
+}
+
+function normalizeSensorData(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const hasSensorFields = [
+    'phLevel', 'ph', 'pH', 'nutrientLevel', 'nutrisi', 'ec',
+    'turbidity', 'kekeruhan', 'temperature', 'suhu', 'waterVolume', 'volume'
+  ].some((key) => key in payload);
+  const entries = Array.isArray(payload)
+    ? payload.filter(Boolean)
+    : Object.values(payload).filter((value) => value && typeof value === 'object');
+  const data = hasSensorFields ? payload : entries[entries.length - 1];
+  if (!data) return null;
+
+  const numberOrNull = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  };
+
+  const sensor = {
+    phLevel: numberOrNull(data.phLevel ?? data.ph ?? data.pH),
+    nutrientLevel: numberOrNull(data.nutrientLevel ?? data.nutrisi ?? data.ec),
+    turbidity: numberOrNull(data.turbidity ?? data.kekeruhan),
+    temperature: numberOrNull(data.temperature ?? data.suhu),
+    waterVolume: numberOrNull(data.waterVolume ?? data.volume)
+  };
+
+  return Object.values(sensor).some((value) => value !== null) ? sensor : null;
 }
 
 function serveStatic(request, response, pathname) {
@@ -72,6 +103,31 @@ const server = http.createServer(async (request, response) => {
       service: 'web-hidroponik-api',
       timestamp: new Date().toISOString()
     });
+    return;
+  }
+
+  if (url.pathname === '/api/sensor/latest' && request.method === 'GET') {
+    try {
+      const upstream = await fetch(SENSOR_DATA_URL, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (!upstream.ok) {
+        sendJson(response, 502, { error: `Sumber sensor merespons HTTP ${upstream.status}` });
+        return;
+      }
+
+      const sensor = normalizeSensorData(await upstream.json());
+      if (!sensor) {
+        sendJson(response, 404, { error: 'Data sensor tidak ditemukan' });
+        return;
+      }
+
+      sendJson(response, 200, { data: sensor, source: SENSOR_DATA_URL });
+    } catch (error) {
+      sendJson(response, 502, { error: 'Gagal mengambil data dari sumber sensor', detail: error.message });
+    }
     return;
   }
 

@@ -4,6 +4,8 @@
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { font-size: 18px; }
+
 /* ── Theme variables ── */
 body.dark {
   --bg: linear-gradient(135deg, #0a0f0d 0%, #0d1812 55%, #0a0f0d 100%);
@@ -192,10 +194,10 @@ body.dark  .toggle-knob { left: 24px; }
 body.light .toggle-knob { left: 2px; }
 
 /* ── Grid ── */
-.grid { display: grid; gap: 16px; margin-bottom: 16px; }
-.grid-3 { grid-template-columns: 1fr; }
+.grid { display: grid; gap: 16px; margin-bottom: 16px; align-items: stretch; }
+.grid-3 { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 768px)  { .grid-3 { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 1024px) { .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+@media (min-width: 1024px) { .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* ── Card ── */
 .card {
@@ -203,13 +205,15 @@ body.light .toggle-knob { left: 2px; }
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
   border-radius: 14px; padding: 20px;
+  height: 100%;
+  min-width: 0;
   transition: background 0.3s, border-color 0.3s;
 }
 .card-accent { border-color: var(--card-border-accent); }
 
 .section-label {
   font-family: 'JetBrains Mono', monospace;
-  color: var(--text-muted); font-size: 1rem; font-weight: 700;
+  color: var(--text-muted); font-size: 1.1rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.14em;
   margin-bottom: 12px;
 }
@@ -222,7 +226,7 @@ body.light .toggle-knob { left: 2px; }
 /* ── Badge ── */
 .badge {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.88rem; font-weight: 600; letter-spacing: 0.09em;
+  font-size: 0.96rem; font-weight: 600; letter-spacing: 0.09em;
   padding: 4px 9px; border-radius: 4px;
 }
 .badge.ok     { background: rgba(34,197,94,0.12); color: var(--ok); border: 1px solid rgba(34,197,94,0.3); }
@@ -246,7 +250,8 @@ body.light .toggle-knob { left: 2px; }
 .mini-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
 .mini-card {
   background: var(--mini-card); border-radius: 7px;
-  padding: 11px 8px; text-align: center;
+  min-height: 68px; padding: 11px 8px; text-align: center;
+  display: flex; flex-direction: column; justify-content: center;
 }
 .mini-label {
   font-family: 'JetBrains Mono', monospace;
@@ -394,9 +399,9 @@ body.light .toggle-knob { left: 2px; }
 }
 
 /* Make the small inline sensor targets readable as well. */
-[style*="font-size:0.63rem"] { font-size: 0.9rem !important; }
-[style*="font-size:0.62rem"] { font-size: 0.86rem !important; }
-[style*="font-size:0.6rem"] { font-size: 0.82rem !important; }
+[style*="font-size:0.63rem"] { font-size: 0.94rem !important; }
+[style*="font-size:0.62rem"] { font-size: 0.9rem !important; }
+[style*="font-size:0.6rem"] { font-size: 0.86rem !important; }
 
 /* ── Log ── */
 .log-card { margin-bottom: 0; }

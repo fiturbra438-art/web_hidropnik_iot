@@ -11,6 +11,35 @@ let logEntries = [];
 let logId = 0;
 let isDark = true;
 
+// ── Sensor backend stream ──────────────────────────────────────────────────
+async function loadSensorData() {
+  try {
+    const response = await fetch('/api/sensor/latest', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    const data = result.data;
+
+    const nextValue = (value, fallback) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : fallback;
+    };
+
+    sensor.ph        = nextValue(data.phLevel, sensor.ph);
+    sensor.nutrisi   = nextValue(data.nutrientLevel, sensor.nutrisi);
+    sensor.kekeruhan = nextValue(data.turbidity, sensor.kekeruhan);
+    sensor.suhu      = nextValue(data.temperature, sensor.suhu);
+    sensor.volume    = nextValue(data.waterVolume, sensor.volume);
+
+    history.ph.push(sensor.ph); if (history.ph.length > 12) history.ph.shift();
+    history.nutrisi.push(sensor.nutrisi); if (history.nutrisi.length > 12) history.nutrisi.shift();
+    history.suhu.push(sensor.suhu); if (history.suhu.length > 12) history.suhu.shift();
+
+    updateDOM();
+  } catch (error) {
+    console.error('Gagal mengambil data sensor:', error);
+  }
+}
+
 // ── Status helpers ─────────────────────────────────────────────────────────
 function phStatus(v)      { return v<5.5||v>7.5 ? {l:"KRITIS",c:"danger"} : v<6.0||v>7.0 ? {l:"PERINGATAN",c:"warn"} : {l:"NORMAL",c:"ok"}; }
 function nutrisiStatus(v) { return v<800||v>1800 ? {l:"KRITIS",c:"danger"} : v<1000||v>1600 ? {l:"PERINGATAN",c:"warn"} : {l:"OPTIMAL",c:"ok"}; }
@@ -257,10 +286,14 @@ function tick() {
   updateDOM();
 }
 
+// Keep the existing inline HTML handlers working with the module script.
+Object.assign(window, { toggleTheme, checkInputs, addPh, addNutrisi });
+
 // ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   checkInputs();
   updateDOM();
   renderLog();
-  setInterval(tick, 3000);
+  loadSensorData();
+  setInterval(loadSensorData, 3000);
 });
