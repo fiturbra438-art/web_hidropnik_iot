@@ -13,10 +13,10 @@ body.dark {
   --card-border-accent: rgba(52,211,153,0.35);
   --card-shadow: 0 2px 16px rgba(0,0,0,0.5);
   --text: rgba(255,255,255,0.88);
-  --text-muted: rgba(255,255,255,0.4);
-  --text-dim: rgba(255,255,255,0.22);
+  --text-muted: rgba(255,255,255,0.68);
+  --text-dim: rgba(255,255,255,0.5);
   --mini-card: rgba(52,211,153,0.08);
-  --mini-text: rgba(255,255,255,0.32);
+  --mini-text: rgba(255,255,255,0.62);
   --input-bg: rgba(52,211,153,0.06);
   --input-border: rgba(52,211,153,0.18);
   --input-border-active: rgba(52,211,153,0.55);
@@ -40,8 +40,8 @@ body.light {
   --card-border-accent: rgba(22,163,74,0.45);
   --card-shadow: 0 2px 16px rgba(22,163,74,0.13);
   --text: #0d2818;
-  --text-muted: rgba(10,30,18,0.62);
-  --text-dim: rgba(10,30,18,0.42);
+  --text-muted: rgba(10,30,18,0.78);
+  --text-dim: rgba(10,30,18,0.62);
   --mini-card: rgba(22,163,74,0.12);
   --mini-text: #1a4a2e;
   --input-bg: rgba(22,163,74,0.06);
@@ -69,6 +69,7 @@ body.light {
 /* ── Base ── */
 body {
   font-family: 'Outfit', sans-serif;
+  font-size: 17px;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -138,14 +139,14 @@ body {
   font-size: 0.58rem; letter-spacing: 0.1em;
   color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
-.header-sub { color: var(--text-muted); font-size: 0.78rem; }
+.header-sub { color: var(--text-muted); font-size: 0.9rem; }
 
 .header-right {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
 }
 
 .live-badge { display: flex; align-items: center; gap: 7px; }
-.live-text { font-size: 0.68rem; color: var(--ok); }
+.live-text { font-size: 0.78rem; color: var(--ok); }
 
 .pulse-dot {
   display: inline-block; width: 10px; height: 10px; border-radius: 50%;
@@ -163,7 +164,7 @@ body {
   background: var(--mini-card);
   border: 1px solid var(--card-border);
   border-radius: 7px; padding: 6px 10px;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 /* ── Theme toggle ── */
@@ -178,16 +179,16 @@ body {
 .icon-moon { color: var(--moon-color); transition: color 0.2s; }
 
 .toggle-pill {
-  position: relative; width: 32px; height: 18px; border-radius: 9px;
+  position: relative; width: 44px; height: 22px; border-radius: 11px;
   background: var(--toggle-knob); transition: background 0.25s;
 }
 .toggle-knob {
-  position: absolute; top: 2px; width: 14px; height: 14px;
+  position: absolute; top: 2px; width: 18px; height: 18px;
   border-radius: 50%; background: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   transition: left 0.25s;
 }
-body.dark  .toggle-knob { left: 16px; }
+body.dark  .toggle-knob { left: 24px; }
 body.light .toggle-knob { left: 2px; }
 
 /* ── Grid ── */
@@ -208,7 +209,7 @@ body.light .toggle-knob { left: 2px; }
 
 .section-label {
   font-family: 'JetBrains Mono', monospace;
-  color: var(--text-muted); font-size: 0.67rem;
+  color: var(--text-muted); font-size: 0.86rem;
   text-transform: uppercase; letter-spacing: 0.14em;
   margin-bottom: 12px;
 }
@@ -221,7 +222,7 @@ body.light .toggle-knob { left: 2px; }
 /* ── Badge ── */
 .badge {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.58rem; letter-spacing: 0.09em;
+  font-size: 0.76rem; letter-spacing: 0.09em;
   padding: 2px 7px; border-radius: 4px;
 }
 .badge.ok     { background: rgba(34,197,94,0.12); color: var(--ok); border: 1px solid rgba(34,197,94,0.3); }
@@ -230,15 +231,15 @@ body.light .toggle-knob { left: 2px; }
 
 /* ── Gauge ── */
 .gauge-wrap { margin: 0 auto; }
-.gauge { width: 100%; max-height: 110px; }
+.gauge { width: calc(100% + 24px); max-width: none; height: auto; margin-left: -12px; max-height: none; }
 
 /* ── Sparkline ── */
 .history-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem; color: var(--text-dim);
+  font-size: 0.78rem; color: var(--text-dim);
   margin-top: 10px; margin-bottom: 4px;
 }
-.sparkline { width: 100%; height: 28px; }
+.sparkline { width: 100%; height: 40px; }
 
 /* ── Mini cards ── */
 .mini-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -249,7 +250,7 @@ body.light .toggle-knob { left: 2px; }
 }
 .mini-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.55rem; color: var(--mini-text); margin-bottom: 2px;
+  font-size: 0.73rem; color: var(--mini-text); margin-bottom: 2px;
 }
 .mini-val {
   font-family: 'JetBrains Mono', monospace;
@@ -259,14 +260,14 @@ body.light .toggle-knob { left: 2px; }
 .mini-val.accent { color: var(--accent); }
 
 /* ── Legend ── */
-.legend-list { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+.legend-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .legend-row { display: flex; align-items: center; justify-content: space-between; }
-.legend-text { font-size: 0.72rem; color: var(--text); }
+.legend-text { font-size: 0.98rem; font-weight: 600; color: var(--text); }
 
 /* ── Dots ── */
 .dot {
-  display: inline-block; width: 7px; height: 7px;
-  border-radius: 50%; flex-shrink: 0; margin-right: 8px;
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 50%; flex-shrink: 0; margin-right: 10px;
 }
 .dot.ok     { background: var(--ok); }
 .dot.warn   { background: var(--warn); }
@@ -327,7 +328,7 @@ body.light .toggle-knob { left: 2px; }
 /* ── Alert ── */
 .alert-box {
   display: flex; align-items: center; gap: 8px;
-  border-radius: 8px; padding: 8px 12px; font-size: 0.7rem;
+  border-radius: 8px; padding: 8px 12px; font-size: 0.8rem;
 }
 .danger-alert {
   background: rgba(239,68,68,0.1);
@@ -347,10 +348,10 @@ body.light .toggle-knob { left: 2px; }
   justify-content: space-between; margin-bottom: 10px;
 }
 .control-title { display: flex; align-items: center; }
-.control-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.control-name { font-size: 0.92rem; font-weight: 600; color: var(--text); }
 
 .badge-inline {
-  font-size: 0.62rem; padding: 2px 7px; border-radius: 4px;
+  font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;
   background: rgba(34,197,94,0.12); color: var(--ok);
 }
 .warn-inline { background: rgba(245,158,11,0.12); color: var(--warn); }
@@ -361,7 +362,7 @@ body.light .toggle-knob { left: 2px; }
   flex: 1; background: var(--input-bg);
   border: 1px solid var(--input-border);
   color: var(--text); font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78rem; padding: 8px 10px;
+  font-size: 0.88rem; padding: 8px 10px;
   border-radius: 7px; outline: none;
   transition: border-color 0.2s;
   min-width: 0;
@@ -372,7 +373,7 @@ body.light .toggle-knob { left: 2px; }
 .ctrl-btn {
   padding: 8px 14px; border-radius: 7px; border: none;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem; font-weight: 600;
+  font-size: 0.82rem; font-weight: 600;
   cursor: not-allowed; transition: all 0.2s;
   background: var(--mini-card); color: var(--text-dim);
   white-space: nowrap;
@@ -389,8 +390,13 @@ body.light .toggle-knob { left: 2px; }
 }
 
 .ctrl-hint {
-  font-size: 0.62rem; color: var(--text-dim); margin-top: 7px;
+  font-size: 0.8rem; color: var(--text-dim); margin-top: 7px;
 }
+
+/* Make the small inline sensor targets readable as well. */
+[style*="font-size:0.63rem"] { font-size: 0.76rem !important; }
+[style*="font-size:0.62rem"] { font-size: 0.75rem !important; }
+[style*="font-size:0.6rem"] { font-size: 0.72rem !important; }
 
 /* ── Log ── */
 .log-card { margin-bottom: 0; }
@@ -399,7 +405,7 @@ body.light .toggle-knob { left: 2px; }
   justify-content: space-between; margin-bottom: 14px;
 }
 .badge-count {
-  font-size: 0.62rem; color: var(--accent);
+  font-size: 0.72rem; color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   padding: 2px 9px; border-radius: 4px;
 }
@@ -429,13 +435,13 @@ body.light .toggle-knob { left: 2px; }
 .log-dot { width: 8px; height: 8px; border-radius: 50%; }
 .log-dot.ph-dot  { background: var(--ok); }
 .log-dot.nut-dot { background: var(--warn); }
-.log-text { flex: 1; font-size: 0.76rem; color: var(--text); }
-.log-time { font-size: 0.62rem; color: var(--text-muted); white-space: nowrap; }
+.log-text { flex: 1; font-size: 0.86rem; color: var(--text); }
+.log-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ── Footer ── */
 .footer {
   display: flex; flex-direction: column; gap: 4px;
-  margin-top: 20px; font-size: 0.58rem;
+  margin-top: 20px; font-size: 0.68rem;
   color: color-mix(in srgb, var(--text) 25%, transparent);
 }
 @media (min-width: 640px) {

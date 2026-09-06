@@ -30,37 +30,28 @@ function drawGauge(svgId, value, min, max, unit, statusClass) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   const pct  = Math.min(1, Math.max(0, (value - min) / (max - min)));
-  const angle= -135 + pct * 270;
-  const r=52, cx=70, cy=70;
+  const x=15, y=52, width=250, height=18;
   const color = clr(statusClass);
 
-  function toRad(d) { return ((d - 90) * Math.PI) / 180; }
-  function arcPath(s, e, rv) {
-    const x1=cx+rv*Math.cos(toRad(s)), y1=cy+rv*Math.sin(toRad(s));
-    const x2=cx+rv*Math.cos(toRad(e)), y2=cy+rv*Math.sin(toRad(e));
-    const large = e-s>180?1:0;
-    return `M ${x1} ${y1} A ${rv} ${rv} 0 ${large} 1 ${x2} ${y2}`;
-  }
-
   const trackColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
-  const textColor  = isDark ? "rgba(255,255,255,0.3)"  : "rgba(10,30,18,0.35)";
+  const textColor  = isDark ? "rgba(255,255,255,0.72)" : "rgba(10,30,18,0.72)";
 
   const displayVal = unit==="ppm"||unit==="L"
     ? Math.round(value)
     : value.toFixed(1);
 
   svg.innerHTML = `
-    <path d="${arcPath(-135,135,r)}" fill="none" stroke="${trackColor}" stroke-width="8" stroke-linecap="round"/>
-    <path d="${arcPath(-135,-135+pct*270,r)}" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round"
+    <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${height / 2}" fill="${trackColor}"/>
+    <rect x="${x}" y="${y}" width="${width * pct}" height="${height}" rx="${height / 2}" fill="${color}"
       style="filter:drop-shadow(0 0 5px ${color}77)"/>
-    <circle cx="${cx+r*Math.cos(toRad(angle))}" cy="${cy+r*Math.sin(toRad(angle))}" r="4"
+    <circle cx="${x + width * pct}" cy="${y + height / 2}" r="5"
       fill="${color}" style="filter:drop-shadow(0 0 4px ${color})"/>
-    <text x="${cx}" y="${cy+4}" text-anchor="middle" font-family="JetBrains Mono,monospace"
-      font-size="15" font-weight="700" fill="${color}">${displayVal}</text>
-    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-family="Outfit,sans-serif"
-      font-size="8" fill="${textColor}">${unit}</text>
-    <text x="12" y="96" font-family="JetBrains Mono,monospace" font-size="7" fill="${textColor}">${min}</text>
-    <text x="128" y="96" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="7" fill="${textColor}">${max}</text>
+    <text x="140" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace"
+      font-size="24" font-weight="700" fill="${color}">${displayVal}</text>
+    <text x="140" y="88" text-anchor="middle" font-family="Outfit,sans-serif"
+      font-size="14" font-weight="600" fill="${textColor}">${unit}</text>
+    <text x="${x}" y="92" font-family="JetBrains Mono,monospace" font-size="12" font-weight="600" fill="${textColor}">${min}</text>
+    <text x="${x + width}" y="92" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="12" font-weight="600" fill="${textColor}">${max}</text>
   `;
 }
 
@@ -70,15 +61,17 @@ function drawSparkline(svgId, data, statusClass) {
   if (!svg || data.length < 2) return;
   const color = clr(statusClass);
   const mn=Math.min(...data), mx=Math.max(...data), range=mx-mn||1;
-  const w=120, h=28;
+  const w=240, h=40;
   const pts = data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/range)*h}`).join(" ");
+  const areaPts = `0,${h} ${pts} ${w},${h}`;
   const last = data[data.length-1];
   const lx=(data.length-1)/(data.length-1)*w;
   const ly=h-((last-mn)/range)*h;
   svg.innerHTML = `
-    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"
+    <polygon points="${areaPts}" fill="${color}" opacity="0.1"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.2"
       stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
-    <circle cx="${lx}" cy="${ly}" r="2.5" fill="${color}"/>
+    <circle cx="${lx}" cy="${ly}" r="3.5" fill="${color}" style="filter:drop-shadow(0 0 3px ${color})"/>
   `;
 }
 
