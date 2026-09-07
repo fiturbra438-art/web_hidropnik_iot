@@ -6,7 +6,7 @@ const { URL } = require('node:url');
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const SENSOR_DATA_URL = process.env.SENSOR_DATA_URL
-  || 'https://hidroponik-iot-54mb4-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json';
+  || 'https://hidroponik-iot-69bf7-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json';
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',

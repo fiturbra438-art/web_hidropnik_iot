@@ -1,10 +1,11 @@
 // ── State ──────────────────────────────────────────────────────────────────
-const sensor = { ph: 6.4, nutrisi: 1240, kekeruhan: 18, suhu: 23.5, volume: 87 };
+const FIREBASE_SENSOR_URL = 'https://hidroponik-iot-69bf7-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json';
+const sensor = { ph: null, nutrisi: null, kekeruhan: null, suhu: null, volume: null };
 
 const history = {
-  ph:     [6.2,6.3,6.5,6.4,6.6,6.3,6.4,6.5,6.4,6.3,6.5,6.4],
-  nutrisi:[1180,1200,1220,1240,1260,1230,1250,1240,1220,1210,1230,1240],
-  suhu:   [23.1,23.3,23.5,23.4,23.6,23.5,23.4,23.5,23.6,23.4,23.5,23.5],
+   ph: [],
+   nutrisi: [],
+   suhu: [],
 };
 
 let logEntries = [];
@@ -14,30 +15,54 @@ let isDark = true;
 // ── Sensor backend stream ──────────────────────────────────────────────────
 async function loadSensorData() {
   try {
-    const response = await fetch('/api/sensor/latest', { cache: 'no-store' });
+    const response = await fetch(`${FIREBASE_SENSOR_URL}?t=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
-    const data = result.data;
+    const data = normalizeSensorData(await response.json());
+    if (!data) throw new Error('Data SensorReading Firebase masih kosong atau formatnya tidak sesuai');
 
-    const nextValue = (value, fallback) => {
+    const nextValue = (value) => {
       const number = Number(value);
-      return Number.isFinite(number) ? number : fallback;
+      return Number.isFinite(number) ? number : null;
     };
 
-    sensor.ph        = nextValue(data.phLevel, sensor.ph);
-    sensor.nutrisi   = nextValue(data.nutrientLevel, sensor.nutrisi);
-    sensor.kekeruhan = nextValue(data.turbidity, sensor.kekeruhan);
-    sensor.suhu      = nextValue(data.temperature, sensor.suhu);
-    sensor.volume    = nextValue(data.waterVolume, sensor.volume);
+    sensor.ph        = nextValue(data.phLevel);
+    sensor.nutrisi   = nextValue(data.nutrientLevel);
+    sensor.kekeruhan = nextValue(data.turbidity);
+    sensor.suhu      = nextValue(data.temperature);
+    sensor.volume    = nextValue(data.waterVolume);
 
-    history.ph.push(sensor.ph); if (history.ph.length > 12) history.ph.shift();
-    history.nutrisi.push(sensor.nutrisi); if (history.nutrisi.length > 12) history.nutrisi.shift();
-    history.suhu.push(sensor.suhu); if (history.suhu.length > 12) history.suhu.shift();
+    if (sensor.ph !== null) { history.ph.push(sensor.ph); if (history.ph.length > 12) history.ph.shift(); }
+    if (sensor.nutrisi !== null) { history.nutrisi.push(sensor.nutrisi); if (history.nutrisi.length > 12) history.nutrisi.shift(); }
+    if (sensor.suhu !== null) { history.suhu.push(sensor.suhu); if (history.suhu.length > 12) history.suhu.shift(); }
 
     updateDOM();
   } catch (error) {
     console.error('Gagal mengambil data sensor:', error);
   }
+}
+
+function normalizeSensorData(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const sensorKeys = ['phLevel', 'ph', 'pH', 'nutrientLevel', 'nutrisi', 'ec', 'turbidity', 'kekeruhan', 'temperature', 'suhu', 'waterVolume', 'volume'];
+  const hasSensorFields = sensorKeys.some((key) => key in payload);
+  const entries = Array.isArray(payload)
+    ? payload.filter(Boolean)
+    : Object.values(payload).filter((value) => value && typeof value === 'object');
+  const data = hasSensorFields ? payload : entries[entries.length - 1];
+  if (!data) return null;
+
+  return {
+    phLevel: data.phLevel ?? data.ph ?? data.pH,
+    nutrientLevel: data.nutrientLevel ?? data.nutrisi ?? data.ec,
+    turbidity: data.turbidity ?? data.kekeruhan,
+    temperature: data.temperature ?? data.suhu,
+    waterVolume: data.waterVolume ?? data.volume,
+  };
+}
+
+function hasSensorData() {
+  return Object.values(sensor).some((value) => value !== null);
 }
 
 // ── Status helpers ─────────────────────────────────────────────────────────
@@ -114,6 +139,8 @@ function setBadge(id, status) {
 
 // ── Update DOM ─────────────────────────────────────────────────────────────
 function updateDOM() {
+  if (!hasSensorData()) return;
+
   const ps  = phStatus(sensor.ph);
   const ns  = nutrisiStatus(sensor.nutrisi);
   const ks  = keruhStatus(sensor.kekeruhan);
@@ -204,7 +231,6 @@ function checkInputs() {
 function addPh() {
   const ml = parseFloat(document.getElementById("input-ph")?.value);
   if (!ml || ml <= 0) return;
-  sensor.ph = +(sensor.ph + ml * 0.02).toFixed(2);
   pushLog("ph", ml);
   document.getElementById("input-ph").value = "";
   checkInputs();
@@ -214,7 +240,6 @@ function addPh() {
 function addNutrisi() {
   const ml = parseFloat(document.getElementById("input-nutrisi")?.value);
   if (!ml || ml <= 0) return;
-  sensor.nutrisi = Math.round(sensor.nutrisi + ml * 1.5);
   pushLog("nutrisi", ml);
   document.getElementById("input-nutrisi").value = "";
   checkInputs();
@@ -269,21 +294,6 @@ function toggleTheme() {
   isDark = !isDark;
   document.body.className = isDark ? "dark" : "light";
   updateDOM(); // redraw gauges with new colors
-}
-
-// ── Live simulation ────────────────────────────────────────────────────────
-function tick() {
-  sensor.ph        = +(sensor.ph        + (Math.random()-0.5)*0.06).toFixed(2);
-  sensor.nutrisi   = Math.round(sensor.nutrisi + (Math.random()-0.5)*10);
-  sensor.kekeruhan = +(sensor.kekeruhan + (Math.random()-0.5)*0.9 ).toFixed(1);
-  sensor.suhu      = +(sensor.suhu      + (Math.random()-0.5)*0.12).toFixed(1);
-  sensor.volume    = +(sensor.volume    - Math.random()*0.04       ).toFixed(1);
-
-  history.ph.push(sensor.ph);       if (history.ph.length>12)      history.ph.shift();
-  history.nutrisi.push(sensor.nutrisi); if (history.nutrisi.length>12) history.nutrisi.shift();
-  history.suhu.push(sensor.suhu);   if (history.suhu.length>12)    history.suhu.shift();
-
-  updateDOM();
 }
 
 // Keep the existing inline HTML handlers working with the module script.

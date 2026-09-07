@@ -32,7 +32,7 @@ Backend memakai `SENSOR_DATA_URL` untuk mengambil data sensor. Jika tidak diatur
 backend memakai Firebase Realtime Database yang sudah dikonfigurasi:
 
 ```text
-https://hidroponik-iot-54mb4-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json
+https://hidroponik-iot-69bf7-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json
 ```
 
 Untuk memakai URL hosting lain di PowerShell:
