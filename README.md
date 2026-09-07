@@ -10,7 +10,7 @@ Pastikan Node.js 18 atau lebih baru sudah terpasang, lalu jalankan:
 npm start
 ```
 
-Buka http://localhost:3000. Untuk mode development dengan restart otomatis:
+Buka https://hidroponik-iot-69bf7.web.app/. Untuk mode development dengan restart otomatis:
 
 ```bash
 npm run dev
