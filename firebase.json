@@ -1,10 +1,22 @@
 {
   "hosting": {
     "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/plant-guidance",
+        "function": {
+          "functionId": "plantGuidance",
+          "region": "asia-southeast1"
+        }
+      }
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ]
+  },
+  "functions": {
+    "source": "functions"
   }
 }

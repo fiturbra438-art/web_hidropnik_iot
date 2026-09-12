@@ -1,5 +1,6 @@
 // ── State ──────────────────────────────────────────────────────────────────
 const FIREBASE_SENSOR_URL = 'https://hidroponik-iot-69bf7-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json';
+const PLANT_GUIDANCE_API_URL = 'https://script.google.com/macros/s/AKfycbw2pOXaStmtcuOymhEs8j_1qqnruezc3uDNJMzALT5FE-UAVTpobJGxKFY0cdDQTqm7/exec';
 const sensor = { ph: null, nutrisi: null, kekeruhan: null, suhu: null, volume: null };
 
 const history = {
@@ -11,6 +12,7 @@ const history = {
 let logEntries = [];
 let logId = 0;
 let isDark = true;
+let plantGuidance = null;
 
 // ── Sensor backend stream ──────────────────────────────────────────────────
 async function loadSensorData() {
@@ -66,10 +68,25 @@ function hasSensorData() {
 }
 
 // ── Status helpers ─────────────────────────────────────────────────────────
-function phStatus(v)      { return v<5.5||v>7.5 ? {l:"KRITIS",c:"danger"} : v<6.0||v>7.0 ? {l:"PERINGATAN",c:"warn"} : {l:"NORMAL",c:"ok"}; }
-function nutrisiStatus(v) { return v<800||v>1800 ? {l:"KRITIS",c:"danger"} : v<1000||v>1600 ? {l:"PERINGATAN",c:"warn"} : {l:"OPTIMAL",c:"ok"}; }
+function rangeStatus(value, range, labels) {
+  if (!Number.isFinite(value)) return { l: "MENUNGGU", c: "warn" };
+  const margin = (range.max - range.min) * 0.15;
+  return value < range.min - margin || value > range.max + margin
+    ? { l: labels.danger, c: "danger" }
+    : value < range.min || value > range.max
+      ? { l: "PERINGATAN", c: "warn" }
+      : { l: labels.ok, c: "ok" };
+}
+function phStatus(v) {
+  return rangeStatus(v, plantGuidance?.ph || { min: 6, max: 7 }, { danger: "KRITIS", ok: "NORMAL" });
+}
+function nutrisiStatus(v) {
+  return rangeStatus(v, plantGuidance?.nutrient || { min: 1000, max: 1600 }, { danger: "KRITIS", ok: "OPTIMAL" });
+}
 function keruhStatus(v)   { return v>40 ? {l:"KERUH",c:"danger"} : v>25 ? {l:"SEDANG",c:"warn"} : {l:"JERNIH",c:"ok"}; }
-function suhuStatus(v)    { return v<18||v>30 ? {l:"KRITIS",c:"danger"} : v<20||v>28 ? {l:"PERINGATAN",c:"warn"} : {l:"IDEAL",c:"ok"}; }
+function suhuStatus(v) {
+  return rangeStatus(v, plantGuidance?.temperature || { min: 20, max: 28 }, { danger: "KRITIS", ok: "IDEAL" });
+}
 
 const COLOR = { ok:"#22c55e", warn:"#f59e0b", danger:"#ef4444" };
 function clr(c) { return COLOR[c]; }
@@ -208,6 +225,68 @@ function updateDOM() {
   if (clock) clock.textContent = fmt(new Date());
 }
 
+function setGuidanceText(id, value) {
+  const element = document.getElementById(id);
+  if (element) element.textContent = value;
+}
+
+function renderPlantGuidance(guidance) {
+  plantGuidance = guidance;
+  setGuidanceText("guidance-ph", `${guidance.ph.min} - ${guidance.ph.max}`);
+  setGuidanceText("guidance-ph-note", guidance.ph.note);
+  setGuidanceText("guidance-nutrient", `${guidance.nutrient.min} - ${guidance.nutrient.max} ${guidance.nutrient.unit || "ppm"}`);
+  setGuidanceText("guidance-nutrient-note", guidance.nutrient.note);
+  setGuidanceText("guidance-temperature", `${guidance.temperature.min} - ${guidance.temperature.max}°C`);
+  setGuidanceText("guidance-temperature-note", guidance.temperature.note);
+
+  const adviceList = document.getElementById("guidance-advice-list");
+  if (adviceList) {
+    adviceList.innerHTML = (guidance.advice || []).slice(0, 3).map((advice) => {
+      const item = document.createElement("li");
+      item.textContent = advice;
+      return item.outerHTML;
+    }).join("");
+  }
+  const results = document.getElementById("guidance-results");
+  if (results) results.hidden = false;
+  updateDOM();
+}
+
+async function loadPlantGuidance() {
+  const select = document.getElementById("plant-input");
+  const button = document.getElementById("guidance-button");
+  const status = document.getElementById("guidance-status");
+  if (!select || !button || !status) return;
+
+  button.disabled = true;
+  status.textContent = "Gemini sedang menyusun ketentuan...";
+  try {
+    if (PLANT_GUIDANCE_API_URL.startsWith('PASTE_')) {
+      throw new Error("URL Google Apps Script belum dipasang di hydrowatch.js.");
+    }
+    const response = await fetch(PLANT_GUIDANCE_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ plant: select.value })
+    });
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("Backend Gemini belum terhubung ke web online. Deploy server API terlebih dahulu.");
+    }
+    const result = await response.json();
+    if (!response.ok || result.error) throw new Error(result.error || "Gagal membuat ketentuan");
+    if (!result.data?.ph || !result.data?.nutrient || !result.data?.temperature) {
+      throw new Error("Respons Gemini tidak memiliki format ketentuan yang lengkap.");
+    }
+    renderPlantGuidance(result.data);
+    status.textContent = `Ketentuan ${result.data.plant} aktif.`;
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 // ── Check inputs ───────────────────────────────────────────────────────────
 function checkInputs() {
   const phVal  = parseFloat(document.getElementById("input-ph")?.value);
@@ -304,6 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkInputs();
   updateDOM();
   renderLog();
+  document.getElementById("guidance-button")?.addEventListener("click", loadPlantGuidance);
   loadSensorData();
   setInterval(loadSensorData, 3000);
 });

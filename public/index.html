@@ -6,7 +6,7 @@
   <title>HydroWatch — Sistem Pemantau Hidroponik</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260906-2" />
+  <link rel="stylesheet" href="styles.css?v=20260912-3" />
 </head>
 <body class="dark">
 
@@ -55,6 +55,28 @@
         </button>
       </div>
     </header>
+
+    <!-- PLANT GUIDANCE -->
+    <section class="card guidance-card" aria-labelledby="guidance-title">
+      <div class="guidance-header">
+        <div>
+          <p class="section-label" id="guidance-title">Ketentuan Tanaman</p>
+          <p class="guidance-subtitle">Gunakan Gemini untuk mendapatkan rentang pH, nutrisi, dan suhu yang sesuai.</p>
+        </div>
+        <div class="plant-picker">
+          <label for="plant-input" class="sr-only">Nama tanaman</label>
+          <input id="plant-input" class="plant-input" type="text" placeholder="Nama tanaman" maxlength="80" autocomplete="off" />
+          <button class="guidance-button" id="guidance-button" type="button">Buat ketentuan</button>
+        </div>
+      </div>
+      <p class="guidance-status" id="guidance-status" role="status">Pilih tanaman, lalu buat ketentuan.</p>
+      <div class="guidance-results" id="guidance-results" hidden>
+        <div class="guidance-range"><span class="guidance-label">pH</span><strong id="guidance-ph"></strong><small id="guidance-ph-note"></small></div>
+        <div class="guidance-range"><span class="guidance-label">Nutrisi</span><strong id="guidance-nutrient"></strong><small id="guidance-nutrient-note"></small></div>
+        <div class="guidance-range"><span class="guidance-label">Suhu</span><strong id="guidance-temperature"></strong><small id="guidance-temperature-note"></small></div>
+        <div class="guidance-advice"><span class="guidance-label">Saran perawatan</span><ul id="guidance-advice-list"></ul></div>
+      </div>
+    </section>
 
     <!-- SENSOR GRID ROW 1 -->
     <div class="grid grid-3">
@@ -223,6 +245,6 @@
 
   </div>
 
-  <script type="module" src="hydrowatch.js?v=20260907-1"></script>
+  <script type="module" src="hydrowatch.js?v=20260912-3"></script>
 </body>
 </html>

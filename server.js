@@ -5,6 +5,8 @@ const { URL } = require('node:url');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const SENSOR_DATA_URL = process.env.SENSOR_DATA_URL
   || 'https://hidroponik-iot-69bf7-default-rtdb.asia-southeast1.firebasedatabase.app/SensorReading.json';
 const MIME_TYPES = {
@@ -94,6 +96,59 @@ function serveStatic(request, response, pathname) {
   });
 }
 
+async function getPlantGuidance(plant) {
+  if (!GEMINI_API_KEY) {
+    const error = new Error('GEMINI_API_KEY belum dikonfigurasi di server');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const prompt = `Kamu adalah agronom hidroponik. Berikan ketentuan praktis untuk tanaman ${plant} yang ditanam di sistem hidroponik rumahan.
+Kembalikan HANYA JSON valid dengan struktur berikut:
+{
+  "plant": "${plant}",
+  "ph": { "min": number, "max": number, "note": "string" },
+  "nutrient": { "min": number, "max": number, "unit": "ppm", "note": "string" },
+  "temperature": { "min": number, "max": number, "unit": "C", "note": "string" },
+  "advice": ["string", "string", "string"]
+}
+Gunakan rentang yang masuk akal untuk fase pertumbuhan umum. Jangan memberi dosis bahan kimia spesifik. Semua angka harus berupa number, bukan string. Bahasa Indonesia, ringkas, dan sertakan tepat 3 saran.`;
+
+  const upstream = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.2
+        }
+      }),
+      signal: AbortSignal.timeout(15000)
+    }
+  );
+
+  if (!upstream.ok) {
+    const detail = await upstream.text();
+    const error = new Error(`Gemini merespons HTTP ${upstream.status}`);
+    error.detail = detail.slice(0, 500);
+    error.statusCode = 502;
+    throw error;
+  }
+
+  const result = await upstream.json();
+  const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    const error = new Error('Gemini tidak mengembalikan rekomendasi');
+    error.statusCode = 502;
+    throw error;
+  }
+
+  return JSON.parse(text);
+}
+
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
 
@@ -146,6 +201,26 @@ const server = http.createServer(async (request, response) => {
       });
     } catch {
       sendJson(response, 400, { error: 'Body request harus berupa JSON yang valid' });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/plant-guidance' && request.method === 'POST') {
+    try {
+      const data = JSON.parse(await readBody(request) || '{}');
+      const plant = typeof data.plant === 'string' ? data.plant.trim() : '';
+      if (!plant || plant.length > 80) {
+        sendJson(response, 400, { error: 'Nama tanaman wajib diisi dan maksimal 80 karakter' });
+        return;
+      }
+
+      const guidance = await getPlantGuidance(plant);
+      sendJson(response, 200, { data: guidance, model: GEMINI_MODEL });
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, {
+        error: error.message || 'Gagal membuat ketentuan tanaman',
+        ...(error.detail ? { detail: error.detail } : {})
+      });
     }
     return;
   }
