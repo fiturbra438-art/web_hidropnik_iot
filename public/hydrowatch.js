@@ -230,8 +230,20 @@ function setGuidanceText(id, value) {
   if (element) element.textContent = value;
 }
 
+function updateGuidanceTargets(guidance) {
+  const phRange = `${guidance.ph.min} – ${guidance.ph.max}`;
+  const nutrientRange = `${guidance.nutrient.min} – ${guidance.nutrient.max}`;
+  const temperatureRange = `${guidance.temperature.min} – ${guidance.temperature.max}°`;
+  setGuidanceText("target-ph", `target ${phRange}`);
+  setGuidanceText("ideal-ph", phRange);
+  setGuidanceText("target-nutrisi", `target ${nutrientRange}`);
+  setGuidanceText("ideal-nutrisi", nutrientRange);
+  setGuidanceText("ideal-suhu", temperatureRange);
+}
+
 function renderPlantGuidance(guidance) {
   plantGuidance = guidance;
+  updateGuidanceTargets(guidance);
   setGuidanceText("guidance-ph", `${guidance.ph.min} - ${guidance.ph.max}`);
   setGuidanceText("guidance-ph-note", guidance.ph.note);
   setGuidanceText("guidance-nutrient", `${guidance.nutrient.min} - ${guidance.nutrient.max} ${guidance.nutrient.unit || "ppm"}`);
